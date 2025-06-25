@@ -151,8 +151,8 @@
 <div class="container">
   <main>
     <div class="py-5 text-center">
-      <!-- <img class="d-block mx-auto mb-4" src="https://adma.id.au/images/sapdmed.png"> -->
-      <img class="d-block mx-auto mb-4" src="https://adma.id.au/images/sapdmed.png">
+      <!-- <img class="d-block mx-auto mb-4" src="https://i.ibb.co.com/pjtTvc1h/SAPD-No-BG.png"> -->
+      <img class="d-block mx-auto mb-4" src="https://i.ibb.co.com/pjtTvc1h/SAPD-No-BG.png">
       <h2>SAPD PENAL TOOL</h2>
       <p class="lead">"Fear None, Protect All"</p>
     </div>
@@ -963,7 +963,7 @@
             $.each(result, function(index, charge) {
               jailtime = jailtime - parseInt(charge.jailtime, 10);
               fine = fine - parseInt(charge.fine, 10);
-              var textarrest = '/arrest ' + suspectid + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
+              var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
               $('#arrest').val(textarrest);
             });
             dataselect
@@ -976,7 +976,7 @@
         });
         $('.btn-light').click(function () {
           suspectid = $('#suspectid').val();
-          var textarrest = '/arrest ' + suspectid + jailtime + ' ' + fine;
+          var textarrest = '/arrest ' + suspectid + ' ' + jailtime + ' ' + fine;
           $('#arrest').val(textarrest);
         });
         $('.btn-info').off('click').on('click', function() {
@@ -992,7 +992,7 @@
         $('#violate-select').on('click', '.btn-info', function() {
             let result = jsonData.filter(x=> x.code == $(this).attr("code"));
             $.each(result, function(index, charge) {
-               if(charge.jailtime == 0)
+               if(jailtime == 0)
                {
                   var copysu = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
                } else
