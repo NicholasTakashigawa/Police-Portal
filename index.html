@@ -951,7 +951,7 @@
                return match === ' ' ? '-' : '';
                 });
                var buttons = '<button type="button" class="btn btn-sm btn-info" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Copy</button>' + '<button type="button" class="btn btn-sm btn-danger" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Remove</button>';
-              var textarrest = '/arrest ' + suspectid + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
+              var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
               $('#arrest').val(textarrest);
               dataselect.row
               .add([charge.code, charge.name, charge.jailtime, charge.fine, buttons])
