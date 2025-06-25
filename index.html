@@ -151,9 +151,8 @@
 <div class="container">
   <main>
     <div class="py-5 text-center">
-      <!-- <img class="d-block mx-auto mb-4" src="https://i.ibb.co.com/pjtTvc1h/SAPD-No-BG.png"> -->
       <img class="d-block mx-auto mb-4" src="https://i.ibb.co.com/pjtTvc1h/SAPD-No-BG.png">
-      <h2>SAPD PENAL TOOL</h2>
+      <h2>SAPD Penal TOOL</h2>
       <p class="lead">"Fear None, Protect All"</p>
     </div>
 
@@ -161,7 +160,7 @@
       <div>
         <form class="row gy-1 gx-1 align-items-center">
           <div class="col-auto">
-            <label class="visually-hidden" for="autoSizingInput">Suspect ID</label>
+            <label class="visually-hidden" for="suspectid">Suspect ID</label>
             <input type="text" class="form-control" id="suspectid" placeholder="Suspect ID">
           </div>
           <div class="col-auto">
@@ -209,7 +208,9 @@
   <button type="button" id="copytickets" class="btn btn-sm btn-info">Copy All Tickets</button>
 </div>
 
-
+            <div class="col-12 mt-3">
+                <input type="text" id="violationSearchInput" class="form-control" placeholder="Cari nomor pelanggaran (pisahkan dengan koma, misal: 1A1.,2D.,3A.)...">
+            </div>
 
             <table class="table table-stripped" id="violate-data" style="font-size: 0.9em;">
               <thead>
@@ -274,7 +275,6 @@
             document.body.removeChild(textarea);
         });
 
-      // Retrieve JSON data from "jsonexdata.json" file
       let suspectid = 0;
       let jailtime = 0;
       let fine = 0;
@@ -980,97 +980,129 @@
 
           tableBody.append(row); // Add the row to the table body
         });
+        
+        // Initialize DataTable for #violate-data without internal searching
         $('#violate-data').DataTable({
-        "order": [[0, "asc"]],
-        "paging": false,
-        responsive: true
-      });
-      var dataselect = new DataTable('#violate-select', {
-         "order": [[0, "asc"]],
-         "paging": false,
-         responsive: true
-      });
+            "order": [[0, "asc"]],
+            "paging": false,
+            responsive: true,
+            "searching": false // Default search bar is disabled here
+        });
+
+        var dataselect = new DataTable('#violate-select', {
+           "order": [[0, "asc"]],
+           "paging": false,
+           responsive: true
+        });
+
+        // Function to update all arrest, charges, and tickets details
+        function updateArrestDetails() {
+            let currentCharges = [];
+            let currentTickets = [];
+            jailtime = 0;
+            fine = 0;
+
+            dataselect.rows().data().each(function (value) {
+                // value[0] is code, value[1] is name, value[2] is jailtime, value[3] is fine
+                let chargeCode = value[0];
+                let chargeName = value[1];
+                let chargeJailtime = parseInt(value[2], 10);
+                let chargeFine = parseInt(value[3], 10);
+
+                jailtime += chargeJailtime;
+                fine += chargeFine;
+
+                if (chargeJailtime === 0) {
+                    currentTickets.push(`/ticket ${suspectid} ${chargeFine} ${chargeCode} ${chargeName}`);
+                }
+                currentCharges.push(`/su ${suspectid} ${chargeCode} ${chargeName}`);
+            });
+
+            // Update Jailtime and Fine with max limits
+            const finalJailtime = jailtime < maxjailtime ? jailtime : maxjailtime;
+            const finalFine = fine < maxfine ? fine : maxfine;
+
+            $('#arrest').val(`/arrest ${suspectid} ${finalJailtime} ${finalFine}`);
+            $('#charges').val(currentCharges.join('\n'));
+            $('#tickets').val(currentTickets.join('\n'));
+        }
+
+        // Custom search function for multiple codes - NOW MANUALLY HIDING/SHOWING ROWS
+        $('#violationSearchInput').on('keyup', function() {
+            var searchTerms = this.value.trim().toUpperCase();
+            var termsArray = searchTerms.split(',').map(term => term.trim()).filter(term => term !== '');
+
+            var tableRows = $('#violate-data tbody tr'); // Get all table rows
+
+            tableRows.each(function() {
+                var row = $(this);
+                var codeCell = row.find('td').eq(0); // Get the first cell (code)
+                if (codeCell.length > 0) { // Ensure the cell exists
+                    var rowCode = codeCell.text().toUpperCase();
+                    var match = false;
+
+                    if (termsArray.length === 0) {
+                        match = true; // Show all if no search terms
+                    } else {
+                        for (var i = 0; i < termsArray.length; i++) {
+                            if (rowCode === termsArray[i]) { // Check for exact match
+                                match = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (match) {
+                        row.show(); // Show the row
+                    } else {
+                        row.hide(); // Hide the row
+                    }
+                }
+            });
+        });
+
         $('.btn-success').click(function () {
             let result = jsonData.filter(x=> x.code == $(this).attr("code"));
             $(this).prop("disabled", true);
-            var cbody = $("#violate-select tbody");
+            var cbody = $("#violate-select tbody"); // This variable is not used after this line.
+
             $.each(result, function(index, charge) {
-              jailtime = jailtime + parseInt(charge.jailtime, 10);
-              fine = fine + parseInt(charge.fine, 10);
-              var convertcharge = 'item-' + charge.code.replace(/[ .]/g, function(match) {
-               return match === ' ' ? '-' : '';
-                });
-               var buttons = '<button type="button" class="btn btn-sm btn-info" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Copy</button>' + '<button type="button" class="btn btn-sm btn-danger" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Remove</button>';
-              var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
-              $('#arrest').val(textarrest);
-              var removeLine = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
-              if (charge.jailtime == "0") {
-                var removeTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
-                var currentTickets = $('#tickets').val().split('\n');
-                currentTickets = currentTickets.filter(line => line.trim() !== removeTicket);
-                $('#tickets').val(currentTickets.join('\n'));
-              }
-
-              var currentCharges = $('#charges').val().split('\n');
-              currentCharges = currentCharges.filter(line => line.trim() !== removeLine);
-              $('#charges').val(currentCharges.join('\n'));
-
-              var oldCharges = $('#charges').val();
-              var newCharge = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
-              if (charge.jailtime == "0") {
-                var oldTickets = $('#tickets').val();
-                var newTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
-                $('#tickets').val(oldTickets + (oldTickets ? '\n' : '') + newTicket);
-              }
-
-              $('#charges').val(oldCharges + (oldCharges ? '\n' : '') + newCharge);
-
               dataselect.row
-              .add([charge.code, charge.name, charge.jailtime, charge.fine, buttons])
+              .add([charge.code, charge.name, charge.jailtime, charge.fine, 
+                    `<button type="button" class="btn btn-sm btn-info" code="${charge.code}">Copy</button>
+                     <button type="button" class="btn btn-sm btn-danger" code="${charge.code}">Remove</button>`])
               .draw();
-        });
-        });
-        $('#violate-select').on('click', '.btn-danger', function () {
-            let result = jsonData.filter(x=> x.code == $(this).attr("code"));
-            $.each(result, function(index, charge) {
-              jailtime = jailtime - parseInt(charge.jailtime, 10);
-              fine = fine - parseInt(charge.fine, 10);
-              var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
-              $('#arrest').val(textarrest);
-              var oldCharges = $('#charges').val();
-              var newCharge = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
-              if (charge.jailtime == "0") {
-                var oldTickets = $('#tickets').val();
-                var newTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
-                $('#tickets').val(oldTickets + (oldTickets ? '\n' : '') + newTicket);
-              }
-
-              $('#charges').val(oldCharges + (oldCharges ? '\n' : '') + newCharge);
-
             });
+            updateArrestDetails(); // Call after adding a violation
+        });
+
+        $('#violate-select').on('click', '.btn-danger', function () {
+            let removedCode = $(this).attr("code");
             dataselect
-            .row($(this).parent('td').parents('tr'))
+            .row($(this).parents('tr'))
             .remove()
             .draw();
-            const selector = `#${this.id}`;
-            const $element = $(selector);
-            $element.prop("disabled", false);
+            
+            // Re-enable the "Add" button for the removed item in violate-data table
+            $(`button[code="${removedCode}"].btn-success`).prop("disabled", false);
+            
+            updateArrestDetails(); // Call after removing a violation
         });
+
         $('.btn-light').click(function () {
           suspectid = $('#suspectid').val();
-          var textarrest = '/arrest ' + suspectid + ' ' + jailtime + ' ' + fine;
-          $('#arrest').val(textarrest);
+          updateArrestDetails(); // Call when suspect ID changes
         });
         
         $('#violate-select').on('click', '.btn-info', function() {
             let result = jsonData.filter(x=> x.code == $(this).attr("code"));
             $.each(result, function(index, charge) {
-               if(jailtime == 0)
+               if(parseInt(charge.jailtime, 10) === 0) // Use parseInt for comparison
                {
-                  var copysu = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
+                  var copysu = `/ticket ${suspectid} ${charge.fine} ${charge.code} ${charge.name}`;
                } else
                {
-                  var copysu = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
+                  var copysu = `/su ${suspectid} ${charge.code} ${charge.name}`;
                }
             var textarea = document.createElement('textarea');
             textarea.value = copysu;
