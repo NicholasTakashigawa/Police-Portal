@@ -963,7 +963,7 @@
             $.each(result, function(index, charge) {
               jailtime = jailtime - parseInt(charge.jailtime, 10);
               fine = fine - parseInt(charge.fine, 10);
-              var textarrest = '/arrest ' + suspectid + ' [Cell ID (1-7)] ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
+              var textarrest = '/arrest ' + suspectid + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
               $('#arrest').val(textarrest);
             });
             dataselect
@@ -976,7 +976,7 @@
         });
         $('.btn-light').click(function () {
           suspectid = $('#suspectid').val();
-          var textarrest = '/arrest ' + suspectid + ' [Cell ID (1-7)] ' + jailtime + ' ' + fine;
+          var textarrest = '/arrest ' + suspectid + jailtime + ' ' + fine;
           $('#arrest').val(textarrest);
         });
         $('.btn-info').off('click').on('click', function() {
