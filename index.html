@@ -190,10 +190,27 @@
            </tfoot>
             </table>
             <div class="input-group mb-3">
-              <span class="input-group-text">Command:</span>
+              <span class="input-group-text">Arrest:</span>
               <input type="text" id="arrest" class="form-control" aria-label="Amount (to the nearest dollar)" value="/arrest 0 0 0" disabled>
               <span class="input-group-text"><button type="button" id="copyarrest" class="btn btn-sm btn-info">Copy</button></span>
             </div>
+<div class="input-group mb-3">
+  <span class="input-group-text">Charges:</span>
+  <textarea id="charges" class="form-control" rows="4" readonly></textarea>
+</div>
+<div class="mb-3">
+  <button type="button" id="copycharges" class="btn btn-sm btn-info">Copy All Charges</button>
+</div>
+<div class="input-group mb-3">
+  <span class="input-group-text">Tickets:</span>
+  <textarea id="tickets" class="form-control" rows="4" readonly></textarea>
+</div>
+<div class="mb-3">
+  <button type="button" id="copytickets" class="btn btn-sm btn-info">Copy All Tickets</button>
+</div>
+
+
+
             <table class="table table-stripped" id="violate-data" style="font-size: 0.9em;">
               <thead>
                 <tr>
@@ -224,6 +241,39 @@
 </div>
 <script>
   $(document).ready(function() {
+        $('#copyarrest').click(function () {
+            var copyArrest = $('#arrest').val();
+            var textarea = document.createElement('textarea');
+            textarea.value = copyArrest;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        });
+
+        $('#copytickets').click(function () {
+            var ticketsText = $('#tickets').val();
+            var textarea = document.createElement('textarea');
+            textarea.value = ticketsText;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        });
+
+        $('#copycharges').click(function () {
+            var chargesText = $('#charges').val();
+            var textarea = document.createElement('textarea');
+            textarea.value = chargesText;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        });
+
       // Retrieve JSON data from "jsonexdata.json" file
       let suspectid = 0;
       let jailtime = 0;
@@ -953,6 +1003,28 @@
                var buttons = '<button type="button" class="btn btn-sm btn-info" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Copy</button>' + '<button type="button" class="btn btn-sm btn-danger" ' + 'id=' + convertcharge + ' ' + 'code=' + charge.code + '>Remove</button>';
               var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
               $('#arrest').val(textarrest);
+              var removeLine = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
+              if (charge.jailtime == "0") {
+                var removeTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
+                var currentTickets = $('#tickets').val().split('\n');
+                currentTickets = currentTickets.filter(line => line.trim() !== removeTicket);
+                $('#tickets').val(currentTickets.join('\n'));
+              }
+
+              var currentCharges = $('#charges').val().split('\n');
+              currentCharges = currentCharges.filter(line => line.trim() !== removeLine);
+              $('#charges').val(currentCharges.join('\n'));
+
+              var oldCharges = $('#charges').val();
+              var newCharge = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
+              if (charge.jailtime == "0") {
+                var oldTickets = $('#tickets').val();
+                var newTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
+                $('#tickets').val(oldTickets + (oldTickets ? '\n' : '') + newTicket);
+              }
+
+              $('#charges').val(oldCharges + (oldCharges ? '\n' : '') + newCharge);
+
               dataselect.row
               .add([charge.code, charge.name, charge.jailtime, charge.fine, buttons])
               .draw();
@@ -965,6 +1037,16 @@
               fine = fine - parseInt(charge.fine, 10);
               var textarrest = '/arrest ' + suspectid + ' ' + (jailtime < maxjailtime ? jailtime : maxjailtime) + ' ' + (fine < maxfine ? fine : maxfine);
               $('#arrest').val(textarrest);
+              var oldCharges = $('#charges').val();
+              var newCharge = '/su ' + suspectid + ' ' + charge.code + ' ' + charge.name;
+              if (charge.jailtime == "0") {
+                var oldTickets = $('#tickets').val();
+                var newTicket = '/ticket ' + suspectid + ' ' + charge.fine + ' ' + charge.code + ' ' + charge.name;
+                $('#tickets').val(oldTickets + (oldTickets ? '\n' : '') + newTicket);
+              }
+
+              $('#charges').val(oldCharges + (oldCharges ? '\n' : '') + newCharge);
+
             });
             dataselect
             .row($(this).parent('td').parents('tr'))
@@ -979,16 +1061,7 @@
           var textarrest = '/arrest ' + suspectid + ' ' + jailtime + ' ' + fine;
           $('#arrest').val(textarrest);
         });
-        $('.btn-info').off('click').on('click', function() {
-            var copyArrest = $('#arrest').val();
-            var textarea = document.createElement('textarea');
-            textarea.value = copyArrest;
-            textarea.style.position = 'fixed';
-            document.body.appendChild(textarea);
-            textarea.select(); // Select the text inside the textarea
-            document.execCommand('copy'); // Copy text to clipboard
-            document.body.removeChild(textarea);
-        });
+        
         $('#violate-select').on('click', '.btn-info', function() {
             let result = jsonData.filter(x=> x.code == $(this).attr("code"));
             $.each(result, function(index, charge) {
